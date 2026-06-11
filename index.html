@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>彈彈球大亂鬥 7.2 - 玩家設定重構版</title>
+    <title>彈彈球大亂鬥 7.3 - 完美設定重構版</title>
     <style>
         body { 
             margin: 0; 
@@ -64,7 +64,7 @@
 </head>
 <body>
 
-    <h1>彈彈球碰撞實驗室 🧪 v7.2</h1>
+    <h1>彈彈球碰撞實驗室 🧪 v7.3</h1>
 
     <div id="ui-panel">
         <div class="control-group" style="color: #ff4d4d;"><span>🧛 吸血鬼:</span><input type="number" id="vampire" value="1" min="0"></div>
@@ -103,7 +103,7 @@
             this.bleedTimer = 0;
             this.consecutiveDodges = 0; 
             this.dodgeCooldown = 0;
-            this.dodgeSpeed = 25;       // 閃避大師初始高速度
+            this.dodgeSpeed = 25;       
             this.dodgeHistory = [];     
 
             if (type === 'vampire') {
@@ -116,25 +116,25 @@
                 this.maxHp = 100;
             } else if (type === 'wheelchair') {
                 this.icon = '♿';
-                this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; // 【輪椅減速70%】 1 - 0.7 = 0.3
-                this.maxHp = 200; // 【輪椅血量200】
+                this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; // 輪椅減速 70%
+                this.maxHp = 200; // 輪椅血量 200
             } else if (type === 'armor') {
                 this.icon = '🛡️';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
                 this.hasShattered = false;
             } else if (type === 'gem') {
-                this.icon = '💎'; // 【保留寶石】
+                this.icon = '💎';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 80;
                 this.laserTimer = Math.floor(Math.random() * 60) + 180;
             } else if (type === 'archer') {
-                this.icon = '🏹'; // 【弓箭手】
+                this.icon = '🏹';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
-                this.maxHp = 70; // 【弓箭血量70】
-                this.shootTimer = 90; // 1.5秒一次
+                this.maxHp = 70; // 弓箭血量 70
+                this.shootTimer = 90; 
             } else if (type === 'dodgemaster') {
-                this.icon = '👤'; // 【更換為相容性更高的貼圖，並加發光框處理】
+                this.icon = '👤'; 
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
             }
@@ -148,7 +148,7 @@
         }
 
         update() {
-            // 【吸血鬼流血】每秒扣5點
+            // 吸血鬼流血效果結算
             if (this.bleedTimer > 0) {
                 this.bleedTimer--;
                 if (this.bleedTimer % 60 === 0) {
@@ -159,7 +159,7 @@
 
             if (this.dodgeCooldown > 0) this.dodgeCooldown--;
 
-            // 閃避大師拉出幻影
+            // 閃避大師殘影
             if (this.type === 'dodgemaster' && this.dodgeCooldown > 35) {
                 this.dodgeHistory.push({x: this.x, y: this.y});
                 if (this.dodgeHistory.length > 4) this.dodgeHistory.shift();
@@ -177,7 +177,7 @@
             
             if (this.hitEffect > 0) this.hitEffect--;
 
-            // 寶石定時雷射
+            // 寶石射雷射
             if (this.type === 'gem') {
                 this.laserTimer--;
                 if (this.laserTimer <= 0) {
@@ -186,7 +186,7 @@
                 }
             }
 
-            // 弓箭手發射飛箭
+            // 弓箭手射箭
             if (this.type === 'archer') {
                 this.shootTimer--;
                 if (this.shootTimer <= 0) {
@@ -197,7 +197,6 @@
         }
 
         draw() {
-            // 繪製閃避大師殘影效果
             if (this.dodgeHistory.length > 0) {
                 this.dodgeHistory.forEach((pos, idx) => {
                     ctx.save();
@@ -215,7 +214,6 @@
             ctx.translate(this.x, this.y);
             ctx.scale(scale, scale);
 
-            // 為閃避大師特別加上霓虹酷炫外圈，保證一定看得到
             if (this.type === 'dodgemaster') {
                 ctx.strokeStyle = '#ff33cc';
                 ctx.lineWidth = 4;
@@ -233,7 +231,7 @@
             ctx.fillText(this.icon, 0, 0);
             ctx.restore();
             
-            // 顯示數字血量
+            // 純數字血量 UI 顯示
             if (this.hp > 0) {
                 ctx.save();
                 ctx.font = 'bold 18px Arial';
@@ -282,7 +280,6 @@
             if (nearestEnemy.type === 'dodgemaster' && nearestEnemy.dodgeCooldown <= 0) {
                 triggerDodgeAction(nearestEnemy, gem.x, gem.y);
                 createFloatingText(nearestEnemy.x, nearestEnemy.y - 75, '⚡ 雷射閃避！', '#ff33cc');
-                // 雷射被閃避，閃避球不累加，因為這不是球
             } else {
                 nearestEnemy.hp -= 20;
                 lasers.push({ x1: gem.x, y1: gem.y, x2: nearestEnemy.x, y2: nearestEnemy.y, life: 10 });
@@ -296,13 +293,11 @@
         let dx = dm.x - threatX; let dy = dm.y - threatY;
         let dist = Math.hypot(dx, dy) || 1;
         
-        // 瞬間朝反方向閃開
         dm.x += (dx / dist) * dm.dodgeSpeed * 5;
         dm.y += (dy / dist) * dm.dodgeSpeed * 5;
         dm.vx = dx / dist; dm.vy = dy / dist;
         
-        // 每次成功躲避後躲避速度降低 5%
-        dm.dodgeSpeed *= 0.95;
+        dm.dodgeSpeed *= 0.95; // 躲避速度永久降低 5%
     }
 
     function triggerArmorShatter(armor) {
@@ -335,7 +330,7 @@
             for (let j = 0; j < entities.length; j++) {
                 if (i === j) continue;
                 let e1 = entities[i], e2 = entities[j];
-                if (e1.hp <= 0 || e2.hp <= 0 || e1.type === e2.type) continue; // 同陣營絕對不互打不碰撞
+                if (e1.hp <= 0 || e2.hp <= 0 || e1.type === e2.type) continue; // 同陣營穿透不衝突
 
                 if (e1.type === 'dodgemaster' && e1.dodgeCooldown <= 0) {
                     let dist = Math.hypot(e2.x - e1.x, e2.y - e1.y);
@@ -343,12 +338,11 @@
                         triggerDodgeAction(e1, e2.x, e2.y);
                         createFloatingText(e1.x, e1.y - 75, '⚡ 完美躲避！', '#ff33cc');
                         
-                        // 如果閃開了對方的閃避球
                         if (e2.type === 'dodgeball') {
                             e2.consecutiveDodges++;
                             createFloatingText(e2.x, e2.y - 40, `🏐 被閃避! (${e2.consecutiveDodges}/3)`, '#ffcc00');
                             if (e2.consecutiveDodges >= 3) {
-                                e2.speed = e2.baseSpeed * 1.5; // 速度提升 50%
+                                e2.speed = e2.baseSpeed * 1.5; 
                                 createFloatingText(e2.x, e2.y - 75, `🔥 閃避球暴走！`, '#ffaa00');
                             }
                         }
@@ -357,11 +351,11 @@
             }
         }
 
-        // 2. 常規實體碰撞（同陣營直接穿透，不執行此處）
+        // 2. 常規實體碰撞
         for (let i = 0; i < entities.length; i++) {
             for (let j = i + 1; j < entities.length; j++) {
                 let e1 = entities[i], e2 = entities[j];
-                if (e1.type === e2.type || e1.hp <= 0 || e2.hp <= 0) continue; // 同陣營免疫
+                if (e1.type === e2.type || e1.hp <= 0 || e2.hp <= 0) continue; // 同陣營完全免疫
 
                 let dx = e2.x - e1.x; let dy = e2.y - e1.y;
                 let dist = Math.hypot(dx, dy);
@@ -383,7 +377,7 @@
                         if (e2.consecutiveDodges >= 3) e2.speed = e2.baseSpeed * 1.5;
                     }
 
-                    // 彈開位移
+                    // 彈開
                     let overlap = minDist - dist;
                     let nx = dx / dist; let ny = dy / dist;
                     e1.x -= nx * (overlap / 2); e1.y -= ny * (overlap / 2);
@@ -399,25 +393,39 @@
     }
 
     function resolveCollisionPayloads(e1, e2, e1Dodged, e2Dodged) {
-        // --- E1 撞擊 E2 ---
+        // --- E1 傷害 輸出給 E2 ---
         let dmgToE2 = 0;
         if (!e2Dodged) {
-            if (e1.type === 'vampire') { dmgToE2 = 20; e2.bleedTimer = 180; } // 流血3秒
+            if (e1.type === 'vampire') { 
+                dmgToE2 = 20; 
+                e2.bleedTimer = 180; // 3秒流血
+                // 【吸血鬼效果】造成多少傷害就補多少血
+                let heal = dmgToE2;
+                e1.hp = Math.min(e1.maxHp, e1.hp + heal);
+                createFloatingText(e1.x, e1.y - 45, `💚 吸血 +${heal}`, '#00ff00');
+            }
             else if (e1.type === 'wheelchair') dmgToE2 = 25;
             else if (e1.type === 'armor') dmgToE2 = 15;
             else if (e1.type === 'gem') dmgToE2 = 10;
-            else if (e1.type === 'archer') dmgToE2 = 10; // 弓箭手碰撞10
-            else if (e1.type === 'dodgemaster') dmgToE2 = 15; // 閃避大師碰撞15
+            else if (e1.type === 'archer') dmgToE2 = 10; 
+            else if (e1.type === 'dodgemaster') dmgToE2 = 15; 
             else if (e1.type === 'dodgeball') { 
-                dmgToE2 = (e1.consecutiveDodges >= 3) ? 100 : 50; // 暴走加倍
-                e1.consecutiveDodges = 0; e1.speed = e1.baseSpeed; // 命中重置
+                dmgToE2 = (e1.consecutiveDodges >= 3) ? 100 : 50; 
+                e1.consecutiveDodges = 0; e1.speed = e1.baseSpeed; 
             }
         }
 
-        // --- E2 撞擊 E1 ---
+        // --- E2 傷害 輸出給 E1 ---
         let dmgToE1 = 0;
         if (!e1Dodged) {
-            if (e2.type === 'vampire') { dmgToE1 = 20; e1.bleedTimer = 180; }
+            if (e2.type === 'vampire') { 
+                dmgToE1 = 20; 
+                e1.bleedTimer = 180; 
+                // 【吸血鬼效果】造成多少傷害就補多少血
+                let heal = dmgToE1;
+                e2.hp = Math.min(e2.maxHp, e2.hp + heal);
+                createFloatingText(e2.x, e2.y - 45, `💚 吸血 +${heal}`, '#00ff00');
+            }
             else if (e2.type === 'wheelchair') dmgToE1 = 25;
             else if (e2.type === 'armor') dmgToE1 = 15;
             else if (e2.type === 'gem') dmgToE1 = 10;
@@ -429,8 +437,8 @@
             }
         }
 
-        if (dmgToE2 > 0) { e2.hp -= dmgToE2; createFloatingText(e2.x, e2.y - 75, `-${dmgToE2.toFixed(0)}`, '#ff4d4d'); }
-        if (dmgToE1 > 0) { e1.hp -= dmgToE1; createFloatingText(e1.x, e1.y - 75, `-${dmgToE1.toFixed(0)}`, '#ff4d4d'); }
+        if (dmgToE2 > 0) { e2.hp -= dmgToE2; createFloatingText(e2.x, e2.y - 75, `-${dmgToE2}`, '#ff4d4d'); }
+        if (dmgToE1 > 0) { e1.hp -= dmgToE1; createFloatingText(e1.x, e1.y - 75, `-${dmgToE1}`, '#ff4d4d'); }
     }
 
     function updateProjectiles() {
@@ -445,16 +453,14 @@
 
             for (let j = 0; j < entities.length; j++) {
                 let e = entities[j];
-                if (e.hp <= 0 || e === a.owner || e.type === a.owner.type) continue; // 同陣營飛箭穿透
+                if (e.hp <= 0 || e === a.owner || e.type === a.owner.type) continue; // 同陣營穿透
 
                 let dist = Math.hypot(a.x - e.x, a.y - e.y);
                 if (dist < e.radius) {
-                    // 閃避大師遇上飛箭
                     if (e.type === 'dodgemaster' && e.dodgeCooldown <= 0) {
                         triggerDodgeAction(e, a.x, a.y);
                         createFloatingText(e.x, e.y - 75, '⚡ 完美截擊！', '#ff33cc');
                         
-                        // 還擊「相同但不同」的外觀箭矢
                         if (a.owner && a.owner.hp > 0) {
                             let angle = Math.atan2(a.owner.y - e.y, a.owner.x - e.x);
                             arrows.push({
@@ -500,7 +506,7 @@
         checkCollisions();
         updateProjectiles();
 
-        // 觸發盔甲死亡炸裂
+        // 盔甲死亡碎裂
         entities.forEach(e => {
             if (e.hp <= 0 && e.type === 'armor' && !e.hasShattered) {
                 e.hasShattered = true;
@@ -531,13 +537,12 @@
             if (l.life <= 0) lasers.splice(i, 1);
         }
 
-        // 繪製箭矢（外觀相同，但還擊物帶霓虹青框）
+        // 繪製箭矢
         arrows.forEach(a => {
             ctx.save();
             ctx.translate(a.x, a.y);
             ctx.rotate(Math.atan2(a.vy, a.vx) + Math.PI / 4);
             if (a.isCounter) {
-                // 【相同但不同】加上青色發光能量外框特效
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = '#00ffff';
                 ctx.strokeStyle = '#00ffff';

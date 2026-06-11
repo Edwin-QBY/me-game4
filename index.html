@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>彈彈球大亂鬥 6.1 - 閃避球機制修正版</title>
+    <title>彈彈球大亂鬥 6.2 - 嚴格設定修正版</title>
     <style>
         body { 
             margin: 0; 
@@ -88,7 +88,7 @@
 </head>
 <body>
 
-    <h1>彈彈球碰撞實驗室 🧪 v6.1</h1>
+    <h1>彈彈球碰撞實驗室 🧪 v6.2</h1>
 
     <div id="ui-panel">
         <div class="control-group" style="color: #ff4d4d;"><span>🧛 吸血鬼:</span><input type="number" id="vampire" value="0" min="0"></div>
@@ -102,14 +102,12 @@
 
     <div id="ruleModal" class="modal" onclick="this.style.display='none'">
         <div class="modal-content">
-            <h2>📜 角色技能詳細指南 (修訂版)</h2>
-            <p><b>🧛 吸血鬼</b>：造成 20 傷害，恢復 10 HP。<b>自帶「閃避效果」</b>（可用於測試輪椅與閃避球）。</p>
+            <h2>📜 角色技能詳細指南 (精準版)</h2>
+            <p><b>🧛 吸血鬼</b>：造成 20 傷害，恢復 10 HP。無額外特殊效果。</p>
             <p><b>🏐 閃避球</b>：本體無閃避。其攻擊<b>可被任何對手閃避（30%機率）</b>。若對手閃避成功，閃避球<b>速度加 10%</b>；若命中，造成 50 傷害並<b>重置</b>速度。</p>
-            <p><b>♿ 輪椅</b>：真傷製造機。碰撞造成對方<b>最大生命值 40% 的真實傷害（無視護盾、減傷）</b>。若對手自帶「閃避效果」（如吸血鬼），則有機率被閃避。</p>
+            <p><b>♿ 輪椅</b>：真傷製造機。碰撞造成對方<b>最大生命值 40% 的真實傷害（無視護盾、減傷）</b>。</p>
             <p><b>🛡️ 盔甲</b>：受到常规傷害與激光<b>減傷 50%</b>（無法減免輪椅真傷）。碰撞造成 15 傷害。</p>
             <p><b>💎 寶石</b>：上限 80 HP。碰撞 10 傷害。每隔 5 秒發射 20 傷害的鎖定激光。</p>
-            <hr style="border:0; border-top:1px solid #444;">
-            <p style="color: #ffcc00; font-style: italic;">💡 機制修正：閃避球回歸「被他人閃避」的運動邏輯，沒砸中人時會瘋狂加速！</p>
             <div class="close-text">點擊任意空白處關閉說明書</div>
         </div>
     </div>
@@ -130,22 +128,20 @@
     class Character {
         constructor(type) {
             this.type = type;
-            this.radius = 64; 
+            this.radius = 96; // 【體積放大】從 64 放大 1.5 倍至 96
             this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
             this.y = Math.random() * (canvas.height - this.radius * 2) + this.radius;
             this.hitEffect = 0; 
-            this.hasDodgeEffect = false; // 閃避效果標記
+            this.hasDodgeEffect = false; 
 
             if (type === 'vampire') {
                 this.icon = '🧛';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
-                this.hasDodgeEffect = true; // 【測試優化】讓吸血鬼攜帶閃避效果，用來觀測輪椅機制
             } else if (type === 'dodgeball') {
                 this.icon = '🏐';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
-                this.hasDodgeEffect = false; // 【核心修正】閃避球自己沒有閃避效果
             } else if (type === 'wheelchair') {
                 this.icon = '♿';
                 this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; 
@@ -195,23 +191,31 @@
             ctx.translate(this.x, this.y);
             ctx.scale(scale, scale);
 
-            ctx.font = `84px Arial`; 
+            ctx.font = `126px Arial`; // 【圖標放大】從 84px 放大 1.5 倍至 126px
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(this.icon, 0, 0);
             ctx.restore();
             
+            // 【血量改為數值顯示】取消進度條，直接顯示 當前血量 / 上限血量
             if (this.hp > 0) {
-                ctx.fillStyle = '#333';
-                ctx.fillRect(this.x - 50, this.y + 70, 100, 8);
+                ctx.save();
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                
+                // 根據血量比例切換顏色（健康綠，殘血紅）
                 ctx.fillStyle = this.hp > (this.maxHp * 0.3) ? '#00ff00' : '#ff3333';
-                ctx.fillRect(this.x - 50, this.y + 70, 100 * (this.hp / this.maxHp), 8);
+                
+                let currentHpText = Math.max(0, Math.ceil(this.hp));
+                ctx.fillText(`${currentHpText} / ${this.maxHp}`, this.x, this.y + 105);
+                ctx.restore();
             }
         }
     }
 
     function createFloatingText(x, y, text, color) {
-        floatingTexts.push({ x: x, y: y, text: text, color: color, life: 45 });
+        floatingTexts.push({ x: x, y: y, text: text, color: color, life: 50 });
     }
 
     function getDamageColor(type) {
@@ -243,7 +247,7 @@
             }
             nearestEnemy.hp -= damage;
             lasers.push({ x1: gem.x, y1: gem.y, x2: nearestEnemy.x, y2: nearestEnemy.y, life: 10 });
-            createFloatingText(nearestEnemy.x, nearestEnemy.y - 55, `⚡ -${damage.toFixed(0)} 激光`, '#00ffff');
+            createFloatingText(nearestEnemy.x, nearestEnemy.y - 75, `⚡ -${damage.toFixed(0)} 激光`, '#00ffff');
         }
     }
 
@@ -301,37 +305,22 @@
         }
     }
 
-    // 【核心並行架構優化】：精準劃分攻防歸屬
     function resolveCollisionPayloads(e1, e2) {
-        
-        // 判定 E2 是否成功閃避了 E1 的攻擊
-        let e2DodgedE1 = false;
-        if (e1.type === 'dodgeball' && Math.random() < 0.3) {
-            e2DodgedE1 = true; // 閃避球的攻擊自帶 30% 被閃避率
-        } else if (e1.type === 'wheelchair' && e2.hasDodgeEffect && Math.random() < 0.3) {
-            e2DodgedE1 = true; // 輪椅只有遇到具有「閃避效果」的個體才會被閃避
-        }
-
-        // 判定 E1 是否成功閃避了 E2 的攻擊
-        let e1DodgedE2 = false;
-        if (e2.type === 'dodgeball' && Math.random() < 0.3) {
-            e1DodgedE2 = true; 
-        } else if (e2.type === 'wheelchair' && e1.hasDodgeEffect && Math.random() < 0.3) {
-            e1DodgedE2 = true; 
-        }
+        // 只有閃避球發出的攻擊才有機率被任何人閃避
+        let e2DodgedE1 = (e1.type === 'dodgeball' && Math.random() < 0.3);
+        let e1DodgedE2 = (e2.type === 'dodgeball' && Math.random() < 0.3);
 
         // --- 1. 結算 E1 衝撞 E2 的輸出 ---
         let dmgToE2 = 0;
         let trueDmgToE2 = false;
 
         if (!e2DodgedE1) {
-            if (e1.type === 'vampire') { dmgToE2 = 20; e1.hp = Math.min(e1.maxHp, e1.hp + 10); createFloatingText(e1.x, e1.y - 55, `+10 吸血`, '#00ff66'); }
+            if (e1.type === 'vampire') { dmgToE2 = 20; e1.hp = Math.min(e1.maxHp, e1.hp + 10); createFloatingText(e1.x, e1.y - 75, `+10 吸血`, '#00ff66'); }
             else if (e1.type === 'armor') { dmgToE2 = 15; }
             else if (e1.type === 'gem') { dmgToE2 = 10; }
-            else if (e1.type === 'dodgeball') { dmgToE2 = 50; e1.speed = e1.baseSpeed; } // 砸中了，速度重置
+            else if (e1.type === 'dodgeball') { dmgToE2 = 50; e1.speed = e1.baseSpeed; } 
             else if (e1.type === 'wheelchair') { dmgToE2 = e2.maxHp * 0.4; trueDmgToE2 = true; }
         } else {
-            // 被閃避了！如果是閃避球，沒砸到物體速度不降反升！
             if (e1.type === 'dodgeball') e1.speed *= 1.1;
         }
 
@@ -340,36 +329,34 @@
         let trueDmgToE1 = false;
 
         if (!e1DodgedE2) {
-            if (e2.type === 'vampire') { dmgToE1 = 20; e2.hp = Math.min(e2.maxHp, e2.hp + 10); createFloatingText(e2.x, e2.y - 55, `+10 吸血`, '#00ff66'); }
+            if (e2.type === 'vampire') { dmgToE1 = 20; e2.hp = Math.min(e2.maxHp, e2.hp + 10); createFloatingText(e2.x, e2.y - 75, `+10 吸血`, '#00ff66'); }
             else if (e2.type === 'armor') { dmgToE1 = 15; }
             else if (e2.type === 'gem') { dmgToE1 = 10; }
-            else if (e2.type === 'dodgeball') { dmgToE1 = 50; e2.speed = e2.baseSpeed; } // 砸中了，速度重置
+            else if (e2.type === 'dodgeball') { dmgToE1 = 50; e2.speed = e2.baseSpeed; } 
             else if (e2.type === 'wheelchair') { dmgToE1 = e1.maxHp * 0.4; trueDmgToE1 = true; }
         } else {
             if (e2.type === 'dodgeball') e2.speed *= 1.1;
         }
 
-        // --- 3. 處理常規防禦減傷（輪椅真傷標記完美繞過） ---
+        // --- 3. 處理常規防禦減傷 ---
         if (e2.type === 'armor' && !trueDmgToE2) dmgToE2 *= 0.5;
         if (e1.type === 'armor' && !trueDmgToE1) dmgToE1 *= 0.5;
 
         // --- 4. 應用傷害與 UI 渲染 ---
-        // 渲染 E2 受擊或閃避
         if (e2DodgedE1) {
-            createFloatingText(e2.x, e2.y - 55, '⚡ 完美閃避！', '#ffcc00');
-            if (e1.type === 'dodgeball') createFloatingText(e1.x, e1.y - 80, `🏎️ 🚀 球速狂飆: ${e1.speed.toFixed(1)}`, '#ffaa00');
+            createFloatingText(e2.x, e2.y - 75, '⚡ 完美閃避！', '#ffcc00');
+            if (e1.type === 'dodgeball') createFloatingText(e1.x, e1.y - 105, `🏎️ 🚀 球速狂飆: ${e1.speed.toFixed(1)}`, '#ffaa00');
         } else if (dmgToE2 > 0) {
             e2.hp -= dmgToE2;
-            createFloatingText(e2.x, e2.y - 55, `${trueDmgToE2 ? '💥 ' : ''}-${dmgToE2.toFixed(0)}`, getDamageColor(e1.type));
+            createFloatingText(e2.x, e2.y - 75, `${trueDmgToE2 ? '💥 ' : ''}-${dmgToE2.toFixed(0)}`, getDamageColor(e1.type));
         }
 
-        // 渲染 E1 受擊或閃避
         if (e1DodgedE2) {
-            createFloatingText(e1.x, e1.y - 55, '⚡ 完美閃避！', '#ffcc00');
-            if (e2.type === 'dodgeball') createFloatingText(e2.x, e2.y - 80, `🏎️ 🚀 球速狂飆: ${e2.speed.toFixed(1)}`, '#ffaa00');
+            createFloatingText(e1.x, e1.y - 75, '⚡ 完美閃避！', '#ffcc00');
+            if (e2.type === 'dodgeball') createFloatingText(e2.x, e2.y - 105, `🏎️ 🚀 球速狂飆: ${e2.speed.toFixed(1)}`, '#ffaa00');
         } else if (dmgToE1 > 0) {
             e1.hp -= dmgToE1;
-            createFloatingText(e1.x, e1.y - 55, `${trueDmgToE1 ? '💥 ' : ''}-${dmgToE1.toFixed(0)}`, getDamageColor(e2.type));
+            createFloatingText(e1.x, e1.y - 75, `${trueDmgToE1 ? '💥 ' : ''}-${dmgToE1.toFixed(0)}`, getDamageColor(e2.type));
         }
     }
 
@@ -417,12 +404,13 @@
         entities.forEach(e => e.draw());
         updateStatusBar();
 
+        // 【數字大小加強】漂浮文字字體調整為 bold 26px 增大視覺衝擊
         for (let i = floatingTexts.length - 1; i >= 0; i--) {
             let ft = floatingTexts[i];
-            ft.y -= 0.6;
+            ft.y -= 0.8; 
             ft.life--;
             ctx.fillStyle = ft.color;
-            ctx.font = 'bold 14px sans-serif';
+            ctx.font = 'bold 26px sans-serif'; 
             ctx.textAlign = 'center';
             ctx.fillText(ft.text, ft.x, ft.y);
             if (ft.life <= 0) floatingTexts.splice(i, 1);

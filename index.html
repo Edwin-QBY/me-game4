@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>彈彈球大亂鬥 4.0 - 激光與重裝甲</title>
+    <title>彈彈球大亂鬥 6.1 - 閃避球機制修正版</title>
     <style>
         body { 
             margin: 0; 
@@ -17,7 +17,6 @@
         
         h1 { color: #ffcc00; margin: 0 0 10px 0; font-size: 24px; }
 
-        /* UI 控制面板 */
         #ui-panel { 
             background: #1e1e1e; 
             padding: 15px 25px; 
@@ -30,7 +29,7 @@
             justify-content: center;
             border: 1px solid #333; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            max-width: 900px;
+            max-width: 1050px;
         }
         
         .control-group { display: flex; align-items: center; gap: 5px; font-weight: bold; }
@@ -61,7 +60,6 @@
         .btn-book { background: #5c5c5c; color: #fff; }
         .btn-book:hover { background: #777; }
         
-        /* 說明書彈窗 */
         .modal { 
             display: none; 
             position: fixed; 
@@ -75,7 +73,7 @@
             background: #222; 
             margin: 5% auto; 
             padding: 25px; 
-            width: 480px; 
+            width: 500px; 
             border-radius: 12px; 
             border: 2px solid #ffcc00;
             box-shadow: 0 5px 25px rgba(0,0,0,0.5);
@@ -84,14 +82,13 @@
         .modal-content p { line-height: 1.5; font-size: 14px; color: #ddd; margin: 8px 0; }
         .close-text { text-align: center; color: #888; font-size: 12px; margin-top: 15px; }
         
-        /* 畫布與狀態 */
         canvas { background: #0a0a0a; border: 3px solid #333; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
         #status-bar { margin-top: 10px; font-size: 15px; color: #aaa; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>彈彈球碰撞實驗室 🧪 v4.0</h1>
+    <h1>彈彈球碰撞實驗室 🧪 v6.1</h1>
 
     <div id="ui-panel">
         <div class="control-group" style="color: #ff4d4d;"><span>🧛 吸血鬼:</span><input type="number" id="vampire" value="0" min="0"></div>
@@ -105,19 +102,19 @@
 
     <div id="ruleModal" class="modal" onclick="this.style.display='none'">
         <div class="modal-content">
-            <h2>📜 角色技能詳細指南</h2>
-            <p><b>🧛 吸血鬼</b>：碰撞造成 <b>20 傷害</b>，恢復自身 <b>10 生命值</b>。</p>
-            <p><b>🏐 閃避球</b>：碰撞時 30% 機率被閃避；成功閃避則自己<b>速度加 10%</b>，否則造成 <b>50 傷害</b>並<b>重置</b>回自身初始速度。</p>
-            <p><b>♿ 輪椅</b>：移動速度降低 70%。碰撞造成對方最大生命值 <b>40% 的真實傷害</b>（對手有 30% 機率閃避）。</p>
-            <p><b>🛡️ 盔甲 (新)</b>：自帶防禦矩陣，受到任何常規碰撞與激光傷害皆<b>減傷 50%</b>。碰撞造成 <b>15 傷害</b>。</p>
-            <p><b>💎 寶石 (新)</b>：初始血量上限為 <b>80 HP</b>。碰撞造成 <b>10 傷害</b>。每隔 <b>5 秒</b>會自動對全場最近的敵人發射一道 <b>20 傷害的遠程激光</b>。</p>
+            <h2>📜 角色技能詳細指南 (修訂版)</h2>
+            <p><b>🧛 吸血鬼</b>：造成 20 傷害，恢復 10 HP。<b>自帶「閃避效果」</b>（可用於測試輪椅與閃避球）。</p>
+            <p><b>🏐 閃避球</b>：本體無閃避。其攻擊<b>可被任何對手閃避（30%機率）</b>。若對手閃避成功，閃避球<b>速度加 10%</b>；若命中，造成 50 傷害並<b>重置</b>速度。</p>
+            <p><b>♿ 輪椅</b>：真傷製造機。碰撞造成對方<b>最大生命值 40% 的真實傷害（無視護盾、減傷）</b>。若對手自帶「閃避效果」（如吸血鬼），則有機率被閃避。</p>
+            <p><b>🛡️ 盔甲</b>：受到常规傷害與激光<b>減傷 50%</b>（無法減免輪椅真傷）。碰撞造成 15 傷害。</p>
+            <p><b>💎 寶石</b>：上限 80 HP。碰撞 10 傷害。每隔 5 秒發射 20 傷害的鎖定激光。</p>
             <hr style="border:0; border-top:1px solid #444;">
-            <p style="color: #ffcc00; font-style: italic;">💡 物理規則：角色半徑放大至 32。無動量交換，碰撞僅改變方向，速度互不干擾。同陣營直接穿透。</p>
+            <p style="color: #ffcc00; font-style: italic;">💡 機制修正：閃避球回歸「被他人閃避」的運動邏輯，沒砸中人時會瘋狂加速！</p>
             <div class="close-text">點擊任意空白處關閉說明書</div>
         </div>
     </div>
 
-    <canvas id="gameCanvas" width="900" height="520"></canvas>
+    <canvas id="gameCanvas" width="1024" height="680"></canvas>
     <div id="status-bar">設定角色數量後點擊按鈕開局！</div>
 
 <script>
@@ -127,26 +124,28 @@
     
     let entities = [];
     let floatingTexts = [];
-    let lasers = []; // 用於存放發射中的激光視覺效果
+    let lasers = []; 
     const GLOBAL_BASE_SPEED = 4.0; 
 
     class Character {
         constructor(type) {
             this.type = type;
-            this.radius = 32; // 【功能改動】角色全面放大
+            this.radius = 64; 
             this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
             this.y = Math.random() * (canvas.height - this.radius * 2) + this.radius;
             this.hitEffect = 0; 
+            this.hasDodgeEffect = false; // 閃避效果標記
 
-            // 初始化各陣營屬性
             if (type === 'vampire') {
                 this.icon = '🧛';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
+                this.hasDodgeEffect = true; // 【測試優化】讓吸血鬼攜帶閃避效果，用來觀測輪椅機制
             } else if (type === 'dodgeball') {
                 this.icon = '🏐';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
+                this.hasDodgeEffect = false; // 【核心修正】閃避球自己沒有閃避效果
             } else if (type === 'wheelchair') {
                 this.icon = '♿';
                 this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; 
@@ -158,8 +157,7 @@
             } else if (type === 'gem') {
                 this.icon = '💎';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
-                this.maxHp = 80; // 【功能改動】寶石血量設定為 80
-                // 讓不同寶石的激光計時错開，避免同時發射卡頓（5秒=300幀）
+                this.maxHp = 80; 
                 this.laserTimer = Math.floor(Math.random() * 60) + 240; 
             }
             
@@ -175,7 +173,6 @@
             this.x += this.vx * this.speed;
             this.y += this.vy * this.speed;
 
-            // 邊界反彈
             if (this.x < this.radius) { this.x = this.radius; this.vx = Math.abs(this.vx); }
             if (this.x > canvas.width - this.radius) { this.x = canvas.width - this.radius; this.vx = -Math.abs(this.vx); }
             if (this.y < this.radius) { this.y = this.radius; this.vy = Math.abs(this.vy); }
@@ -183,12 +180,11 @@
             
             if (this.hitEffect > 0) this.hitEffect--;
 
-            // 【功能改動】寶石自動充能激光
             if (this.type === 'gem') {
                 this.laserTimer--;
                 if (this.laserTimer <= 0) {
                     fireGemLaser(this);
-                    this.laserTimer = 300; // 每 5 秒(300幀)循環一次
+                    this.laserTimer = 300; 
                 }
             }
         }
@@ -199,7 +195,7 @@
             ctx.translate(this.x, this.y);
             ctx.scale(scale, scale);
 
-            ctx.font = `42px Arial`; // 【功能改動】配合角色放大圖標
+            ctx.font = `84px Arial`; 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(this.icon, 0, 0);
@@ -207,9 +203,9 @@
             
             if (this.hp > 0) {
                 ctx.fillStyle = '#333';
-                ctx.fillRect(this.x - 24, this.y + 26, 48, 5);
+                ctx.fillRect(this.x - 50, this.y + 70, 100, 8);
                 ctx.fillStyle = this.hp > (this.maxHp * 0.3) ? '#00ff00' : '#ff3333';
-                ctx.fillRect(this.x - 24, this.y + 26, 48 * (this.hp / this.maxHp), 5);
+                ctx.fillRect(this.x - 50, this.y + 70, 100 * (this.hp / this.maxHp), 8);
             }
         }
     }
@@ -218,12 +214,18 @@
         floatingTexts.push({ x: x, y: y, text: text, color: color, life: 45 });
     }
 
-    // 寶石發射激光邏輯
+    function getDamageColor(type) {
+        if (type === 'vampire') return '#ff4d4d';
+        if (type === 'dodgeball') return '#ffaa00';
+        if (type === 'wheelchair') return '#00ffff';
+        if (type === 'armor') return '#a0a0a0';
+        return '#cc00ff'; 
+    }
+
     function fireGemLaser(gem) {
         let nearestEnemy = null;
         let minDist = Infinity;
 
-        // 尋找全場最近的相異陣營敵人
         entities.forEach(other => {
             if (other.type !== 'gem' && other.hp > 0) {
                 let d = Math.hypot(other.x - gem.x, other.y - gem.y);
@@ -235,18 +237,13 @@
         });
 
         if (nearestEnemy) {
-            let damage = 20; // 激光基本傷害
-            
-            // 如果目標是盔甲，觸發減慢 50% 特性
+            let damage = 20; 
             if (nearestEnemy.type === 'armor') {
                 damage *= 0.5;
             }
-
             nearestEnemy.hp -= damage;
-            
-            // 記錄激光劃過軌跡 (x1, y1, x2, y2, 剩餘顯示時間)
             lasers.push({ x1: gem.x, y1: gem.y, x2: nearestEnemy.x, y2: nearestEnemy.y, life: 10 });
-            createFloatingText(nearestEnemy.x, nearestEnemy.y - 35, `⚡ -${damage.toFixed(0)} 激光`, '#00ffff');
+            createFloatingText(nearestEnemy.x, nearestEnemy.y - 55, `⚡ -${damage.toFixed(0)} 激光`, '#00ffff');
         }
     }
 
@@ -275,12 +272,13 @@
             for (let j = i + 1; j < entities.length; j++) {
                 let e1 = entities[i], e2 = entities[j];
                 
-                if (e1.type === e2.type) continue; // 同陣營穿透
+                if (e1.type === e2.type) continue; 
+                if (e1.hp <= 0 || e2.hp <= 0) continue; 
 
                 let dx = e2.x - e1.x;
                 let dy = e2.y - e1.y;
                 let dist = Math.hypot(dx, dy);
-                let minDist = e1.radius + e2.radius; // 64
+                let minDist = e1.radius + e2.radius; 
 
                 if (dist < minDist) {
                     let overlap = minDist - dist;
@@ -291,76 +289,88 @@
                     e2.x += nx * (overlap / 2);
                     e2.y += ny * (overlap / 2);
 
-                    // 恆定獨立反彈，刪除動量交換
                     e1.vx = -nx; e1.vy = -ny;
                     e2.vx = nx;  e2.vy = ny;
 
                     e1.hitEffect = 8; 
                     e2.hitEffect = 8;
                     
-                    // 互相結算傷害
-                    applyDamage(e1, e2);
-                    applyDamage(e2, e1);
+                    resolveCollisionPayloads(e1, e2);
                 }
             }
         }
     }
 
-    function applyDamage(attacker, defender) {
-        if (attacker.hp <= 0 || defender.hp <= 0) return;
-
-        let rawDamage = 0;
-        let isTrueDamage = false;
-
-        // 1. 根據攻擊者類型計算原始碰撞傷害
-        if (attacker.type === 'vampire') {
-            rawDamage = 20;
-            attacker.hp = Math.min(attacker.maxHp, attacker.hp + 10);
-            createFloatingText(attacker.x, attacker.y - 20, '+10 吸血', '#00ff66');
-        } 
-        else if (attacker.type === 'armor') {
-            rawDamage = 15; // 【功能改動】盔甲碰撞傷害 15
-        } 
-        else if (attacker.type === 'gem') {
-            rawDamage = 10; // 【功能改動】寶石碰撞傷害 10
-        } 
-        else if (attacker.type === 'dodgeball') {
-            if (Math.random() < 0.3) {
-                attacker.speed *= 1.1; 
-                createFloatingText(defender.x, defender.y - 20, '⚡ 閃避！', '#ffcc00');
-                createFloatingText(attacker.x, attacker.y - 35, `🏎️ 自身速: ${attacker.speed.toFixed(1)}`, '#ffaa00');
-                return; 
-            } else {
-                rawDamage = 50;
-                attacker.speed = attacker.baseSpeed; 
-                createFloatingText(attacker.x, attacker.y - 35, '↩️ 速度重置', '#ffffff');
-            }
-        } 
-        else if (attacker.type === 'wheelchair') {
-            if (Math.random() < 0.3) {
-                createFloatingText(defender.x, defender.y - 20, '⚡ 閃避輪椅！', '#4da6ff');
-                return;
-            } else {
-                rawDamage = defender.maxHp * 0.4;
-                isTrueDamage = true; // 標記為真實傷害
-            }
-        }
-
-        // 2. 處理防守者為【盔甲】時的 50% 減傷機制
-        if (defender.type === 'armor' && !isTrueDamage) {
-            rawDamage *= 0.5; // 【功能改動】非真實傷害直接砍半
-        }
-
-        defender.hp -= rawDamage;
-
-        // 彈出對應顏色的傷害文字
-        let dmgColor = attacker.type === 'vampire' ? '#ff4d4d' : 
-                       attacker.type === 'dodgeball' ? '#ffaa00' : 
-                       attacker.type === 'wheelchair' ? '#00ffff' :
-                       attacker.type === 'armor' ? '#a0a0a0' : '#cc00ff';
+    // 【核心並行架構優化】：精準劃分攻防歸屬
+    function resolveCollisionPayloads(e1, e2) {
         
-        let prefix = isTrueDamage ? '💥 -' : '-';
-        createFloatingText(defender.x, defender.y - 20, `${prefix}${rawDamage.toFixed(0)}`, dmgColor);
+        // 判定 E2 是否成功閃避了 E1 的攻擊
+        let e2DodgedE1 = false;
+        if (e1.type === 'dodgeball' && Math.random() < 0.3) {
+            e2DodgedE1 = true; // 閃避球的攻擊自帶 30% 被閃避率
+        } else if (e1.type === 'wheelchair' && e2.hasDodgeEffect && Math.random() < 0.3) {
+            e2DodgedE1 = true; // 輪椅只有遇到具有「閃避效果」的個體才會被閃避
+        }
+
+        // 判定 E1 是否成功閃避了 E2 的攻擊
+        let e1DodgedE2 = false;
+        if (e2.type === 'dodgeball' && Math.random() < 0.3) {
+            e1DodgedE2 = true; 
+        } else if (e2.type === 'wheelchair' && e1.hasDodgeEffect && Math.random() < 0.3) {
+            e1DodgedE2 = true; 
+        }
+
+        // --- 1. 結算 E1 衝撞 E2 的輸出 ---
+        let dmgToE2 = 0;
+        let trueDmgToE2 = false;
+
+        if (!e2DodgedE1) {
+            if (e1.type === 'vampire') { dmgToE2 = 20; e1.hp = Math.min(e1.maxHp, e1.hp + 10); createFloatingText(e1.x, e1.y - 55, `+10 吸血`, '#00ff66'); }
+            else if (e1.type === 'armor') { dmgToE2 = 15; }
+            else if (e1.type === 'gem') { dmgToE2 = 10; }
+            else if (e1.type === 'dodgeball') { dmgToE2 = 50; e1.speed = e1.baseSpeed; } // 砸中了，速度重置
+            else if (e1.type === 'wheelchair') { dmgToE2 = e2.maxHp * 0.4; trueDmgToE2 = true; }
+        } else {
+            // 被閃避了！如果是閃避球，沒砸到物體速度不降反升！
+            if (e1.type === 'dodgeball') e1.speed *= 1.1;
+        }
+
+        // --- 2. 結算 E2 衝撞 E1 的輸出 ---
+        let dmgToE1 = 0;
+        let trueDmgToE1 = false;
+
+        if (!e1DodgedE2) {
+            if (e2.type === 'vampire') { dmgToE1 = 20; e2.hp = Math.min(e2.maxHp, e2.hp + 10); createFloatingText(e2.x, e2.y - 55, `+10 吸血`, '#00ff66'); }
+            else if (e2.type === 'armor') { dmgToE1 = 15; }
+            else if (e2.type === 'gem') { dmgToE1 = 10; }
+            else if (e2.type === 'dodgeball') { dmgToE1 = 50; e2.speed = e2.baseSpeed; } // 砸中了，速度重置
+            else if (e2.type === 'wheelchair') { dmgToE1 = e1.maxHp * 0.4; trueDmgToE1 = true; }
+        } else {
+            if (e2.type === 'dodgeball') e2.speed *= 1.1;
+        }
+
+        // --- 3. 處理常規防禦減傷（輪椅真傷標記完美繞過） ---
+        if (e2.type === 'armor' && !trueDmgToE2) dmgToE2 *= 0.5;
+        if (e1.type === 'armor' && !trueDmgToE1) dmgToE1 *= 0.5;
+
+        // --- 4. 應用傷害與 UI 渲染 ---
+        // 渲染 E2 受擊或閃避
+        if (e2DodgedE1) {
+            createFloatingText(e2.x, e2.y - 55, '⚡ 完美閃避！', '#ffcc00');
+            if (e1.type === 'dodgeball') createFloatingText(e1.x, e1.y - 80, `🏎️ 🚀 球速狂飆: ${e1.speed.toFixed(1)}`, '#ffaa00');
+        } else if (dmgToE2 > 0) {
+            e2.hp -= dmgToE2;
+            createFloatingText(e2.x, e2.y - 55, `${trueDmgToE2 ? '💥 ' : ''}-${dmgToE2.toFixed(0)}`, getDamageColor(e1.type));
+        }
+
+        // 渲染 E1 受擊或閃避
+        if (e1DodgedE2) {
+            createFloatingText(e1.x, e1.y - 55, '⚡ 完美閃避！', '#ffcc00');
+            if (e2.type === 'dodgeball') createFloatingText(e2.x, e2.y - 80, `🏎️ 🚀 球速狂飆: ${e2.speed.toFixed(1)}`, '#ffaa00');
+        } else if (dmgToE1 > 0) {
+            e1.hp -= dmgToE1;
+            createFloatingText(e1.x, e1.y - 55, `${trueDmgToE1 ? '💥 ' : ''}-${dmgToE1.toFixed(0)}`, getDamageColor(e2.type));
+        }
     }
 
     function updateStatusBar() {
@@ -383,16 +393,10 @@
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 1. 更新所有角色狀態與定時器
         entities.forEach(e => e.update());
-        
-        // 2. 檢測邊界與陣營碰撞
         checkCollisions();
-        
-        // 3. 清理死亡角色
         entities = entities.filter(e => e.hp > 0);
         
-        // 4. 渲染激光特效線條
         for (let i = lasers.length - 1; i >= 0; i--) {
             let l = lasers[i];
             ctx.save();
@@ -410,19 +414,15 @@
             if (l.life <= 0) lasers.splice(i, 1);
         }
 
-        // 5. 繪製所有生還角色
         entities.forEach(e => e.draw());
-        
-        // 6. 更新數據顯示
         updateStatusBar();
 
-        // 7. 渲染與更新浮空傷害文字
         for (let i = floatingTexts.length - 1; i >= 0; i--) {
             let ft = floatingTexts[i];
             ft.y -= 0.6;
             ft.life--;
             ctx.fillStyle = ft.color;
-            ctx.font = 'bold 13px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(ft.text, ft.x, ft.y);
             if (ft.life <= 0) floatingTexts.splice(i, 1);

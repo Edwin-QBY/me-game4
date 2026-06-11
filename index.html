@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>彈彈球大亂鬥 6.2 - 嚴格設定修正版</title>
+    <title>彈彈球大亂鬥 7.1 - 玩家絕對控制版</title>
     <style>
         body { 
             margin: 0; 
@@ -29,7 +29,7 @@
             justify-content: center;
             border: 1px solid #333; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            max-width: 1050px;
+            max-width: 1100px;
         }
         
         .control-group { display: flex; align-items: center; gap: 5px; font-weight: bold; }
@@ -57,30 +57,6 @@
             transition: background 0.2s;
         }
         button:hover { background: #ffe066; }
-        .btn-book { background: #5c5c5c; color: #fff; }
-        .btn-book:hover { background: #777; }
-        
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            z-index: 10; 
-            backdrop-filter: blur(4px);
-        }
-        .modal-content { 
-            background: #222; 
-            margin: 5% auto; 
-            padding: 25px; 
-            width: 500px; 
-            border-radius: 12px; 
-            border: 2px solid #ffcc00;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
-        }
-        .modal-content h2 { color: #ffcc00; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .modal-content p { line-height: 1.5; font-size: 14px; color: #ddd; margin: 8px 0; }
-        .close-text { text-align: center; color: #888; font-size: 12px; margin-top: 15px; }
         
         canvas { background: #0a0a0a; border: 3px solid #333; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
         #status-bar { margin-top: 10px; font-size: 15px; color: #aaa; font-weight: bold; }
@@ -88,32 +64,20 @@
 </head>
 <body>
 
-    <h1>彈彈球碰撞實驗室 🧪 v6.2</h1>
+    <h1>彈彈球碰撞實驗室 🧪 v7.1</h1>
 
     <div id="ui-panel">
         <div class="control-group" style="color: #ff4d4d;"><span>🧛 吸血鬼:</span><input type="number" id="vampire" value="0" min="0"></div>
         <div class="control-group" style="color: #ffaa00;"><span>🏐 閃避球:</span><input type="number" id="dodgeball" value="0" min="0"></div>
         <div class="control-group" style="color: #4da6ff;"><span>♿ 輪椅:</span><input type="number" id="wheelchair" value="0" min="0"></div>
         <div class="control-group" style="color: #a0a0a0;"><span>🛡️ 盔甲:</span><input type="number" id="armor" value="0" min="0"></div>
-        <div class="control-group" style="color: #00ffff;"><span>💎 寶石:</span><input type="number" id="gem" value="0" min="0"></div>
+        <div class="control-group" style="color: #99ff33;"><span>🏹 弓箭:</span><input type="number" id="archer" value="0" min="0"></div>
+        <div class="control-group" style="color: #ff33cc;"><span>🥷 閃避大師:</span><input type="number" id="dodgemaster" value="0" min="0"></div>
         <button onclick="startGame()">🚀 生成開戰</button>
-        <button class="btn-book" onclick="document.getElementById('ruleModal').style.display='block'">📖 技能說明書</button>
-    </div>
-
-    <div id="ruleModal" class="modal" onclick="this.style.display='none'">
-        <div class="modal-content">
-            <h2>📜 角色技能詳細指南 (精準版)</h2>
-            <p><b>🧛 吸血鬼</b>：造成 20 傷害，恢復 10 HP。無額外特殊效果。</p>
-            <p><b>🏐 閃避球</b>：本體無閃避。其攻擊<b>可被任何對手閃避（30%機率）</b>。若對手閃避成功，閃避球<b>速度加 10%</b>；若命中，造成 50 傷害並<b>重置</b>速度。</p>
-            <p><b>♿ 輪椅</b>：真傷製造機。碰撞造成對方<b>最大生命值 40% 的真實傷害（無視護盾、減傷）</b>。</p>
-            <p><b>🛡️ 盔甲</b>：受到常规傷害與激光<b>減傷 50%</b>（無法減免輪椅真傷）。碰撞造成 15 傷害。</p>
-            <p><b>💎 寶石</b>：上限 80 HP。碰撞 10 傷害。每隔 5 秒發射 20 傷害的鎖定激光。</p>
-            <div class="close-text">點擊任意空白處關閉說明書</div>
-        </div>
     </div>
 
     <canvas id="gameCanvas" width="1024" height="680"></canvas>
-    <div id="status-bar">設定角色數量後點擊按鈕開局！</div>
+    <div id="status-bar">請輸入角色數量後點擊開始！</div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
@@ -122,17 +86,23 @@
     
     let entities = [];
     let floatingTexts = [];
-    let lasers = []; 
+    let arrows = [];
+    let particles = [];
     const GLOBAL_BASE_SPEED = 4.0; 
 
     class Character {
         constructor(type) {
             this.type = type;
-            this.radius = 96; // 【體積放大】從 64 放大 1.5 倍至 96
+            this.radius = 96; // 角色放大一半
             this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
             this.y = Math.random() * (canvas.height - this.radius * 2) + this.radius;
             this.hitEffect = 0; 
-            this.hasDodgeEffect = false; 
+            
+            this.bleedTimer = 0;
+            this.consecutiveDodges = 0; // 閃避球專用連續被閃避次數
+            this.dodgeCooldown = 0;
+            this.dodgeSpeed = 24;       // 閃避大師初始高躲避速度
+            this.dodgeHistory = [];     // 殘影效果歷史紀錄
 
             if (type === 'vampire') {
                 this.icon = '🧛';
@@ -144,17 +114,22 @@
                 this.maxHp = 100;
             } else if (type === 'wheelchair') {
                 this.icon = '♿';
-                this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; 
-                this.maxHp = 100;
+                this.baseSpeed = GLOBAL_BASE_SPEED; 
+                this.maxHp = 200; // 【自訂 1】輪椅血量 200
             } else if (type === 'armor') {
                 this.icon = '🛡️';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
                 this.maxHp = 100;
-            } else if (type === 'gem') {
-                this.icon = '💎';
+                this.hasShattered = false;
+            } else if (type === 'archer') {
+                this.icon = '🏹';
                 this.baseSpeed = GLOBAL_BASE_SPEED;
-                this.maxHp = 80; 
-                this.laserTimer = Math.floor(Math.random() * 60) + 240; 
+                this.maxHp = 70; // 【自訂 5】弓箭生命上限 70
+                this.shootTimer = 90; // 1.5秒發射一次 (60fps * 1.5 = 90)
+            } else if (type === 'dodgemaster') {
+                this.icon = '🥷';
+                this.baseSpeed = GLOBAL_BASE_SPEED;
+                this.maxHp = 100;
             }
             
             this.hp = this.maxHp;
@@ -166,6 +141,25 @@
         }
 
         update() {
+            // 【自訂 2】吸血鬼流血效果結算 (每秒扣5點)
+            if (this.bleedTimer > 0) {
+                this.bleedTimer--;
+                if (this.bleedTimer % 60 === 0) {
+                    this.hp -= 5;
+                    createFloatingText(this.x, this.y - 50, "🩸 -5 流血", "#ff3333");
+                }
+            }
+
+            if (this.dodgeCooldown > 0) this.dodgeCooldown--;
+
+            // 繪製閃避大師殘影更新
+            if (this.type === 'dodgemaster' && this.dodgeCooldown > 40) {
+                this.dodgeHistory.push({x: this.x, y: this.y});
+                if (this.dodgeHistory.length > 4) this.dodgeHistory.shift();
+            } else {
+                this.dodgeHistory = [];
+            }
+
             this.x += this.vx * this.speed;
             this.y += this.vy * this.speed;
 
@@ -176,37 +170,47 @@
             
             if (this.hitEffect > 0) this.hitEffect--;
 
-            if (this.type === 'gem') {
-                this.laserTimer--;
-                if (this.laserTimer <= 0) {
-                    fireGemLaser(this);
-                    this.laserTimer = 300; 
+            // 【自訂 5】弓箭定時發射
+            if (this.type === 'archer') {
+                this.shootTimer--;
+                if (this.shootTimer <= 0) {
+                    fireArrow(this);
+                    this.shootTimer = 90;
                 }
             }
         }
 
         draw() {
+            // 繪製閃避大師殘影效果 【自訂 6】
+            if (this.dodgeHistory.length > 0) {
+                this.dodgeHistory.forEach((pos, idx) => {
+                    ctx.save();
+                    ctx.globalAlpha = (idx + 1) * 0.15;
+                    ctx.font = `126px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.icon, pos.x, pos.y);
+                    ctx.restore();
+                });
+            }
+
             ctx.save();
             let scale = 1.0 + (this.hitEffect * 0.04);
             ctx.translate(this.x, this.y);
             ctx.scale(scale, scale);
-
-            ctx.font = `126px Arial`; // 【圖標放大】從 84px 放大 1.5 倍至 126px
+            ctx.font = `126px Arial`; 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(this.icon, 0, 0);
             ctx.restore();
             
-            // 【血量改為數值顯示】取消進度條，直接顯示 當前血量 / 上限血量
+            // 顯示當前血量和血量上限（數值化）
             if (this.hp > 0) {
                 ctx.save();
                 ctx.font = 'bold 18px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                
-                // 根據血量比例切換顏色（健康綠，殘血紅）
                 ctx.fillStyle = this.hp > (this.maxHp * 0.3) ? '#00ff00' : '#ff3333';
-                
                 let currentHpText = Math.max(0, Math.ceil(this.hp));
                 ctx.fillText(`${currentHpText} / ${this.maxHp}`, this.x, this.y + 105);
                 ctx.restore();
@@ -218,87 +222,111 @@
         floatingTexts.push({ x: x, y: y, text: text, color: color, life: 50 });
     }
 
-    function getDamageColor(type) {
-        if (type === 'vampire') return '#ff4d4d';
-        if (type === 'dodgeball') return '#ffaa00';
-        if (type === 'wheelchair') return '#00ffff';
-        if (type === 'armor') return '#a0a0a0';
-        return '#cc00ff'; 
+    // 【自訂 5】弓箭手發射飛箭
+    function fireArrow(archer) {
+        let nearest = null;
+        let minDist = Infinity;
+        entities.forEach(other => {
+            if (other !== archer && other.hp > 0) {
+                let d = Math.hypot(other.x - archer.x, other.y - archer.y);
+                if (d < minDist) { minDist = d; nearest = other; }
+            }
+        });
+        if (nearest) {
+            let angle = Math.atan2(nearest.y - archer.y, nearest.x - archer.x);
+            arrows.push({
+                x: archer.x, y: archer.y,
+                vx: Math.cos(angle), vy: Math.sin(angle),
+                speed: 8, damage: 30, owner: archer, isCounter: false
+            });
+        }
     }
 
-    function fireGemLaser(gem) {
-        let nearestEnemy = null;
-        let minDist = Infinity;
+    // 【自訂 6】閃避大師發動身法躲避
+    function triggerDodgeAction(dm, threatX, threatY) {
+        dm.dodgeCooldown = 50; 
+        let dx = dm.x - threatX;
+        let dy = dm.y - threatY;
+        let dist = Math.hypot(dx, dy) || 1;
+        
+        // 高初始距離位移彈開
+        dm.x += (dx / dist) * dm.dodgeSpeed * 5;
+        dm.y += (dy / dist) * dm.dodgeSpeed * 5;
+        dm.vx = dx / dist;
+        dm.vy = dy / dist;
+        
+        // 每次成功躲避後速度降低 5%
+        dm.dodgeSpeed *= 0.95;
+    }
 
+    // 【自訂 3】盔甲死亡範圍碎甲傷害
+    function triggerArmorShatter(armor) {
+        particles.push({x: armor.x, y: armor.y, radius: 10, maxRadius: 260, life: 20});
         entities.forEach(other => {
-            if (other.type !== 'gem' && other.hp > 0) {
-                let d = Math.hypot(other.x - gem.x, other.y - gem.y);
-                if (d < minDist) {
-                    minDist = d;
-                    nearestEnemy = other;
+            if (other !== armor && other.hp > 0) {
+                let dist = Math.hypot(other.x - armor.x, other.y - armor.y);
+                if (dist <= 260) { 
+                    other.hp -= 30;
+                    createFloatingText(other.x, other.y - 75, `💥 碎甲波及 -30`, '#a0a0a0');
                 }
             }
         });
-
-        if (nearestEnemy) {
-            let damage = 20; 
-            if (nearestEnemy.type === 'armor') {
-                damage *= 0.5;
-            }
-            nearestEnemy.hp -= damage;
-            lasers.push({ x1: gem.x, y1: gem.y, x2: nearestEnemy.x, y2: nearestEnemy.y, life: 10 });
-            createFloatingText(nearestEnemy.x, nearestEnemy.y - 75, `⚡ -${damage.toFixed(0)} 激光`, '#00ffff');
-        }
     }
 
     function startGame() {
-        entities = [];
-        floatingTexts = [];
-        lasers = [];
-        const types = ['vampire', 'dodgeball', 'wheelchair', 'armor', 'gem'];
+        entities = []; floatingTexts = []; arrows = []; particles = [];
+        const types = ['vampire', 'dodgeball', 'wheelchair', 'armor', 'archer', 'dodgemaster'];
         
         types.forEach(t => {
             let count = parseInt(document.getElementById(t).value) || 0;
-            for(let i = 0; i < count; i++) {
-                entities.push(new Character(t));
-            }
+            for(let i = 0; i < count; i++) { entities.push(new Character(t)); }
         });
-
-        if(entities.length === 0) {
-            statusBar.innerText = "戰場上沒有任何人，請輸入數量！";
-        } else {
-            statusBar.innerText = "大亂鬥全面開打！";
-        }
+        statusBar.innerText = entities.length === 0 ? "戰場空無一人！" : "大亂鬥全面開打！";
     }
 
     function checkCollisions() {
+        // 預檢判定：閃避大師在與實體或攻擊物相撞前優先觸發躲避
+        for (let i = 0; i < entities.length; i++) {
+            for (let j = 0; j < entities.length; j++) {
+                if (i === j) continue;
+                let e1 = entities[i], e2 = entities[j];
+                if (e1.hp <= 0 || e2.hp <= 0 || e1.type === e2.type) continue;
+
+                if (e1.type === 'dodgemaster' && e1.dodgeCooldown <= 0) {
+                    let dist = Math.hypot(e2.x - e1.x, e2.y - e1.y);
+                    if (dist < (e1.radius + e2.radius) + 40) { 
+                        triggerDodgeAction(e1, e2.x, e2.y);
+                        createFloatingText(e1.x, e1.y - 75, '⚡ 完美躲避！', '#ff33cc');
+                        
+                        // 【自訂 4】如果是閃避球攻擊被躲避，增加閃避球落空計數
+                        if (e2.type === 'dodgeball') {
+                            e2.consecutiveDodges++;
+                            if (e2.consecutiveDodges >= 3) e2.speed = e2.baseSpeed * 1.5; 
+                        }
+                    }
+                }
+            }
+        }
+
+        // 正常實體碰撞
         for (let i = 0; i < entities.length; i++) {
             for (let j = i + 1; j < entities.length; j++) {
                 let e1 = entities[i], e2 = entities[j];
-                
-                if (e1.type === e2.type) continue; 
-                if (e1.hp <= 0 || e2.hp <= 0) continue; 
+                if (e1.type === e2.type || e1.hp <= 0 || e2.hp <= 0) continue; 
 
-                let dx = e2.x - e1.x;
-                let dy = e2.y - e1.y;
+                let dx = e2.x - e1.x; let dy = e2.y - e1.y;
                 let dist = Math.hypot(dx, dy);
                 let minDist = e1.radius + e2.radius; 
 
                 if (dist < minDist) {
                     let overlap = minDist - dist;
-                    let nx = dx / dist;
-                    let ny = dy / dist;
-                    e1.x -= nx * (overlap / 2);
-                    e1.y -= ny * (overlap / 2);
-                    e2.x += nx * (overlap / 2);
-                    e2.y += ny * (overlap / 2);
-
+                    let nx = dx / dist; let ny = dy / dist;
+                    e1.x -= nx * (overlap / 2); e1.y -= ny * (overlap / 2);
                     e1.vx = -nx; e1.vy = -ny;
+                    e2.x += nx * (overlap / 2); e2.y += ny * (overlap / 2);
                     e2.vx = nx;  e2.vy = ny;
 
-                    e1.hitEffect = 8; 
-                    e2.hitEffect = 8;
-                    
+                    e1.hitEffect = 8; e2.hitEffect = 8;
                     resolveCollisionPayloads(e1, e2);
                 }
             }
@@ -306,57 +334,76 @@
     }
 
     function resolveCollisionPayloads(e1, e2) {
-        // 只有閃避球發出的攻擊才有機率被任何人閃避
-        let e2DodgedE1 = (e1.type === 'dodgeball' && Math.random() < 0.3);
-        let e1DodgedE2 = (e2.type === 'dodgeball' && Math.random() < 0.3);
-
-        // --- 1. 結算 E1 衝撞 E2 的輸出 ---
+        // --- E1 撞擊 E2 ---
         let dmgToE2 = 0;
-        let trueDmgToE2 = false;
-
-        if (!e2DodgedE1) {
-            if (e1.type === 'vampire') { dmgToE2 = 20; e1.hp = Math.min(e1.maxHp, e1.hp + 10); createFloatingText(e1.x, e1.y - 75, `+10 吸血`, '#00ff66'); }
-            else if (e1.type === 'armor') { dmgToE2 = 15; }
-            else if (e1.type === 'gem') { dmgToE2 = 10; }
-            else if (e1.type === 'dodgeball') { dmgToE2 = 50; e1.speed = e1.baseSpeed; } 
-            else if (e1.type === 'wheelchair') { dmgToE2 = e2.maxHp * 0.4; trueDmgToE2 = true; }
-        } else {
-            if (e1.type === 'dodgeball') e1.speed *= 1.1;
+        if (e1.type === 'vampire') { dmgToE2 = 20; e2.bleedTimer = 180; } // 【自訂 2】流血3秒
+        else if (e1.type === 'wheelchair') dmgToE2 = 25;
+        else if (e1.type === 'armor') dmgToE2 = 15;
+        else if (e1.type === 'archer') dmgToE2 = 10; // 【自訂 5】近戰碰撞 10
+        else if (e1.type === 'dodgemaster') dmgToE2 = 15; // 【自訂 6】碰撞造成 15
+        else if (e1.type === 'dodgeball') { 
+            // 【自訂 4】連續被閃避3次，傷害加倍 (100)
+            dmgToE2 = (e1.consecutiveDodges >= 3) ? 100 : 50; 
+            e1.consecutiveDodges = 0; e1.speed = e1.baseSpeed; // 命中後重置
         }
 
-        // --- 2. 結算 E2 衝撞 E1 的輸出 ---
+        // --- E2 撞擊 E1 ---
         let dmgToE1 = 0;
-        let trueDmgToE1 = false;
-
-        if (!e1DodgedE2) {
-            if (e2.type === 'vampire') { dmgToE1 = 20; e2.hp = Math.min(e2.maxHp, e2.hp + 10); createFloatingText(e2.x, e2.y - 75, `+10 吸血`, '#00ff66'); }
-            else if (e2.type === 'armor') { dmgToE1 = 15; }
-            else if (e2.type === 'gem') { dmgToE1 = 10; }
-            else if (e2.type === 'dodgeball') { dmgToE1 = 50; e2.speed = e2.baseSpeed; } 
-            else if (e2.type === 'wheelchair') { dmgToE1 = e1.maxHp * 0.4; trueDmgToE1 = true; }
-        } else {
-            if (e2.type === 'dodgeball') e2.speed *= 1.1;
+        if (e2.type === 'vampire') { dmgToE1 = 20; e1.bleedTimer = 180; }
+        else if (e2.type === 'wheelchair') dmgToE1 = 25;
+        else if (e2.type === 'armor') dmgToE1 = 15;
+        else if (e2.type === 'archer') dmgToE1 = 10;
+        else if (e2.type === 'dodgemaster') dmgToE1 = 15;
+        else if (e2.type === 'dodgeball') { 
+            dmgToE1 = (e2.consecutiveDodges >= 3) ? 100 : 50; 
+            e2.consecutiveDodges = 0; e2.speed = e2.baseSpeed;
         }
 
-        // --- 3. 處理常規防禦減傷 ---
-        if (e2.type === 'armor' && !trueDmgToE2) dmgToE2 *= 0.5;
-        if (e1.type === 'armor' && !trueDmgToE1) dmgToE1 *= 0.5;
+        // 扣血與字體反饋
+        if (dmgToE2 > 0) { e2.hp -= dmgToE2; createFloatingText(e2.x, e2.y - 75, `-${dmgToE2}`, '#ff4d4d'); }
+        if (dmgToE1 > 0) { e1.hp -= dmgToE1; createFloatingText(e1.x, e1.y - 75, `-${dmgToE1}`, '#ff4d4d'); }
+    }
 
-        // --- 4. 應用傷害與 UI 渲染 ---
-        if (e2DodgedE1) {
-            createFloatingText(e2.x, e2.y - 75, '⚡ 完美閃避！', '#ffcc00');
-            if (e1.type === 'dodgeball') createFloatingText(e1.x, e1.y - 105, `🏎️ 🚀 球速狂飆: ${e1.speed.toFixed(1)}`, '#ffaa00');
-        } else if (dmgToE2 > 0) {
-            e2.hp -= dmgToE2;
-            createFloatingText(e2.x, e2.y - 75, `${trueDmgToE2 ? '💥 ' : ''}-${dmgToE2.toFixed(0)}`, getDamageColor(e1.type));
-        }
+    function updateProjectiles() {
+        // 飛行道具更新與判定
+        for (let i = arrows.length - 1; i >= 0; i--) {
+            let a = arrows[i];
+            a.x += a.vx * a.speed;
+            a.y += a.vy * a.speed;
 
-        if (e1DodgedE2) {
-            createFloatingText(e1.x, e1.y - 75, '⚡ 完美閃避！', '#ffcc00');
-            if (e2.type === 'dodgeball') createFloatingText(e2.x, e2.y - 105, `🏎️ 🚀 球速狂飆: ${e2.speed.toFixed(1)}`, '#ffaa00');
-        } else if (dmgToE1 > 0) {
-            e1.hp -= dmgToE1;
-            createFloatingText(e1.x, e1.y - 75, `${trueDmgToE1 ? '💥 ' : ''}-${dmgToE1.toFixed(0)}`, getDamageColor(e2.type));
+            if (a.x < 0 || a.x > canvas.width || a.y < 0 || a.y > canvas.height) {
+                arrows.splice(i, 1); continue;
+            }
+
+            for (let j = 0; j < entities.length; j++) {
+                let e = entities[j];
+                if (e.hp <= 0 || e === a.owner) continue;
+
+                let dist = Math.hypot(a.x - e.x, a.y - e.y);
+                if (dist < e.radius) {
+                    // 【自訂 6】閃避大師遭遇飛行物：觸發躲避並還擊「相同但不同」的飛行物
+                    if (e.type === 'dodgemaster' && e.dodgeCooldown <= 0) {
+                        triggerDodgeAction(e, a.x, a.y);
+                        createFloatingText(e.x, e.y - 75, '⚡ 截擊還擊！', '#ff33cc');
+                        
+                        // 發射還擊箭：相同傷害(30)，標記為 isCounter=true 以變更顏色外觀
+                        if (a.owner && a.owner.hp > 0) {
+                            let angle = Math.atan2(a.owner.y - e.y, a.owner.x - e.x);
+                            arrows.push({
+                                x: e.x, y: e.y,
+                                vx: Math.cos(angle), vy: Math.sin(angle),
+                                speed: 10, damage: a.damage, owner: e, isCounter: true
+                            });
+                        }
+                    } else {
+                        // 正常擊中
+                        e.hp -= a.damage;
+                        createFloatingText(e.x, e.y - 75, `🏹 -${a.damage}`, '#99ff33');
+                    }
+                    arrows.splice(i, 1);
+                    break;
+                }
+            }
         }
     }
 
@@ -366,14 +413,15 @@
         let d = entities.filter(e => e.type === 'dodgeball').length;
         let w = entities.filter(e => e.type === 'wheelchair').length;
         let a = entities.filter(e => e.type === 'armor').length;
-        let g = entities.filter(e => e.type === 'gem').length;
+        let r = entities.filter(e => e.type === 'archer').length;
+        let m = entities.filter(e => e.type === 'dodgemaster').length;
         
         let aliveTypes = [...new Set(entities.map(e => e.type))];
         if (aliveTypes.length === 1) {
-            let label = {vampire:'🧛 吸血鬼', dodgeball:'🏐 閃避球', wheelchair:'♿ 輪椅', armor:'🛡️ 盔甲', gem:'💎 寶石'}[entities[0].type];
+            let label = {vampire:'🧛 吸血鬼', dodgeball:'🏐 閃避球', wheelchair:'♿ 輪椅', armor:'🛡️ 盔甲', archer:'🏹 弓箭', dodgemaster:'🥷 閃避大師'}[entities[0].type];
             statusBar.innerText = `🏆 競技結束！贏家是：${label} 陣營！`;
         } else {
-            statusBar.innerText = `存活 -> 🧛:${v} | 🏐:${d} | ♿:${w} | 🛡️:${a} | 💎:${g}`;
+            statusBar.innerText = `存活 -> 🧛:${v} | 🏐:${d} | ♿:${w} | 🛡️:${a} | 🏹:${r} | 🥷:${m}`;
         }
     }
 
@@ -382,33 +430,52 @@
         
         entities.forEach(e => e.update());
         checkCollisions();
+        updateProjectiles();
+
+        // 觸發盔甲死亡炸裂
+        entities.forEach(e => {
+            if (e.hp <= 0 && e.type === 'armor' && !e.hasShattered) {
+                e.hasShattered = true;
+                triggerArmorShatter(e);
+            }
+        });
         entities = entities.filter(e => e.hp > 0);
         
-        for (let i = lasers.length - 1; i >= 0; i--) {
-            let l = lasers[i];
+        // 繪製碎甲衝擊波
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.radius += (p.maxRadius - p.radius) * 0.15; p.life--;
             ctx.save();
-            ctx.strokeStyle = `rgba(0, 255, 255, ${l.life / 10})`;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#00ffff';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(l.x1, l.y1);
-            ctx.lineTo(l.x2, l.y2);
-            ctx.stroke();
-            ctx.restore();
-            
-            l.life--;
-            if (l.life <= 0) lasers.splice(i, 1);
+            ctx.strokeStyle = `rgba(160, 160, 160, ${p.life / 20})`;
+            ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+            if (p.life <= 0) particles.splice(i, 1);
         }
+
+        // 繪製箭矢（常規 vs 還擊物外觀）
+        arrows.forEach(a => {
+            ctx.save();
+            ctx.translate(a.x, a.y);
+            ctx.rotate(Math.atan2(a.vy, a.vx) + Math.PI / 4);
+            if (a.isCounter) {
+                // 【自訂 6】表現出相同但不同的外觀 (霓虹發光特效)
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00ffff';
+                ctx.fillStyle = '#00ffff';
+            } else {
+                ctx.fillStyle = '#99ff33';
+            }
+            ctx.font = '36px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🏹', 0, 0);
+            ctx.restore();
+        });
 
         entities.forEach(e => e.draw());
         updateStatusBar();
 
-        // 【數字大小加強】漂浮文字字體調整為 bold 26px 增大視覺衝擊
+        // 【數字大小加強】保持大字體提示
         for (let i = floatingTexts.length - 1; i >= 0; i--) {
             let ft = floatingTexts[i];
-            ft.y -= 0.8; 
-            ft.life--;
+            ft.y -= 0.8; ft.life--;
             ctx.fillStyle = ft.color;
             ctx.font = 'bold 26px sans-serif'; 
             ctx.textAlign = 'center';

@@ -2,376 +2,333 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>不主動攻擊的彈彈球大亂鬥</title>
+    <title>彈彈球大亂鬥 3.0 - 絕對恆定速度版</title>
     <style>
-        body {
-            margin: 0;
+        body { 
+            margin: 0; 
+            background: #121212; 
+            color: #fff; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
             padding: 20px;
-            background-color: #1a1a1a;
-            color: #fff;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-
-        h1 { color: #ffcc00; margin-bottom: 10px; }
-
-        #setup-panel {
-            background-color: #2b2b2b;
-            padding: 15px;
-            border-radius: 8px;
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .input-box { display: flex; flex-direction: column; align-items: center; }
-        .input-box label { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
         
-        input[type="number"] {
-            width: 60px;
-            padding: 6px;
-            background: #111;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            text-align: center;
-        }
+        h1 { color: #ffcc00; margin: 0 0 10px 0; font-size: 24px; }
 
-        button {
-            padding: 8px 20px;
-            background-color: #ffcc00;
+        /* UI 控制面板 */
+        #ui-panel { 
+            background: #1e1e1e; 
+            padding: 15px 25px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            gap: 20px; 
+            align-items: center; 
+            border: 1px solid #333; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .control-group { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        
+        input[type="number"] { 
+            width: 55px; 
+            padding: 6px; 
+            background: #2a2a2a; 
+            color: white; 
+            border: 1px solid #555; 
+            border-radius: 6px;
+            text-align: center; 
+            font-size: 14px;
+        }
+        
+        button { 
+            padding: 8px 16px; 
+            cursor: pointer; 
+            background: #ffcc00; 
             color: #000;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 15px;
+            border: none; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            font-size: 14px;
+            transition: background 0.2s;
         }
-        button:hover { background-color: #ffe066; }
-
-        canvas {
-            background-color: #111;
-            border: 3px solid #444;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        button:hover { background: #ffe066; }
+        .btn-book { background: #5c5c5c; color: #fff; }
+        .btn-book:hover { background: #777; }
+        
+        /* 說明書彈窗 */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); 
+            z-index: 10; 
+            backdrop-filter: blur(4px);
         }
-
-        #scoreboard {
-            margin-top: 15px;
-            font-size: 16px;
-            color: #ccc;
-            text-align: center;
-            font-weight: bold;
+        .modal-content { 
+            background: #222; 
+            margin: 10% auto; 
+            padding: 25px; 
+            width: 450px; 
+            border-radius: 12px; 
+            border: 2px solid #ffcc00;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
         }
+        .modal-content h2 { color: #ffcc00; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-content p { line-height: 1.6; font-size: 15px; color: #ddd; }
+        .close-text { text-align: center; color: #888; font-size: 12px; margin-top: 20px; }
+        
+        /* 畫布與狀態 */
+        canvas { background: #0a0a0a; border: 3px solid #333; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+        #status-bar { margin-top: 10px; font-size: 15px; color: #aaa; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <h1>彈彈球碰撞實驗室 🧪</h1>
 
-    <div id="setup-panel">
-        <div class="input-box" style="color: #ff4d4d;">
-            <label>🧛 吸血鬼 數量</label>
-            <input type="number" id="vampireCount" value="3" min="0">
-        </div>
-        <div class="input-box" style="color: #ffaa00;">
-            <label>🟠 閃避球 數量</label>
-            <input type="number" id="dodgeballCount" value="3" min="0">
-        </div>
-        <div class="input-box" style="color: #4da6ff;">
-            <label>♿ 輪椅 數量</label>
-            <input type="number" id="wheelchairCount" value="3" min="0">
-        </div>
-        <div style="display: flex; align-items: flex-end;">
-            <button id="startBtn">🚀 放入戰場開局</button>
+    <div id="ui-panel">
+        <div class="control-group" style="color: #ff4d4d;"><span>🧛 吸血鬼:</span><input type="number" id="vampire" value="0" min="0"></div>
+        <div class="control-group" style="color: #ffaa00;"><span>🏐 閃避球:</span><input type="number" id="dodgeball" value="0" min="0"></div>
+        <div class="control-group" style="color: #4da6ff;"><span>♿ 輪椅:</span><input type="number" id="wheelchair" value="0" min="0"></div>
+        <button onclick="startGame()">🚀 生成開戰</button>
+        <button class="btn-book" onclick="document.getElementById('ruleModal').style.display='block'">📖 技能說明書</button>
+    </div>
+
+    <div id="ruleModal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content">
+            <h2>📜 角色技能詳細指南</h2>
+            <p><b>🧛 吸血鬼</b>：<br>碰撞時對對方造成 <b>20 傷害</b>，並恢復自身 <b>10 生命值</b>（造成傷害的一半）。</p>
+            <p><b>🏐 閃避球</b>：<br>碰撞時有 <b>30% 機率</b>被對方閃避不造成傷害，但自己<b>增加 10% 移動速度</b>（無上限）；若沒有被閃避，則造成 <b>50 傷害</b>並<b>重置</b>回自身初始移動速度。</p>
+            <p><b>♿ 輪椅</b>：<br>移動速度<b>降低 70%</b>。碰撞時造成對方最大生命值 <b>40% 的真實傷害</b>（無法被防禦，但對手有 30% 機率能閃避開）。</p>
+            <hr style="border:0; border-top:1px solid #444;">
+            <p style="color: #ffcc00; font-style: italic;">💡 物理機制優化：刪除了所有動量交換！碰撞時僅改變反彈方向，速度高低完全由個體獨立決定，閃避球加成與重置絕不干擾其他角色。</p>
+            <div class="close-text">點擊任意空白處關閉說明書</div>
         </div>
     </div>
 
     <canvas id="gameCanvas" width="850" height="500"></canvas>
-    <div id="scoreboard">準備就緒，請設定數量並點擊按鈕！</div>
+    <div id="status-bar">設定角色數量後點擊按鈕開局！</div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('startBtn');
-        const scoreboard = document.getElementById('scoreboard');
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusBar = document.getElementById('status-bar');
+    
+    let entities = [];
+    let floatingTexts = [];
+    const GLOBAL_BASE_SPEED = 4.0; // 所有人統一的初始基礎移動速度
 
-        let entities = [];
-        let floatingTexts = [];
-        let gameRunning = false;
+    class Character {
+        constructor(type) {
+            this.type = type;
+            this.radius = 25; 
+            this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+            this.y = Math.random() * (canvas.height - this.radius * 2) + this.radius;
+            this.hp = 100;
+            this.maxHp = 100;
+            this.hitEffect = 0; 
 
-        const BASE_SPEED = 3.5; // 所有人統一的初始基礎移動速度
-
-        class Character {
-            constructor(x, y, type) {
-                this.x = x;
-                this.y = y;
-                this.type = type;
-                this.hp = 100;
-                this.maxHp = 100;
-                this.radius = 16;
-                this.speedMultiplier = 1.0;
-
-                // 隨姐隨機決定初始移動方向
-                let angle = Math.random() * Math.PI * 2;
-                
-                // 輪椅特性：移動速度降低 70% (也就是只剩原本的 30%)
-                let speed = BASE_SPEED;
-                if (this.type === 'wheelchair') {
-                    speed = BASE_SPEED * 0.3;
-                }
-
-                this.vx = Math.cos(angle) * speed;
-                this.vy = Math.sin(angle) * speed;
-
-                // 設定顏色標籤
-                if (this.type === 'vampire') { this.color = '#ff4d4d'; this.name = '吸血鬼'; }
-                if (this.type === 'dodgeball') { this.color = '#ffaa00'; this.name = '閃避球'; }
-                if (this.type === 'wheelchair') { this.color = '#4da6ff'; this.name = '輪椅'; }
+            // 設定個體初始速度與圖標
+            if (type === 'vampire') {
+                this.icon = '🧛';
+                this.baseSpeed = GLOBAL_BASE_SPEED;
+            } else if (type === 'dodgeball') {
+                this.icon = '🏐';
+                this.baseSpeed = GLOBAL_BASE_SPEED;
+            } else if (type === 'wheelchair') {
+                this.icon = '♿';
+                this.baseSpeed = GLOBAL_BASE_SPEED * 0.3; // 降低 70%，即剩下 30% 速度
             }
-
-            update() {
-                // 移動位置
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // 邊界碰撞反彈 (左、右)
-                if (this.x - this.radius < 0) {
-                    this.x = this.radius;
-                    this.vx = -this.vx;
-                } else if (this.x + this.radius > canvas.width) {
-                    this.x = canvas.width - this.radius;
-                    this.vx = -this.vx;
-                }
-
-                // 邊界碰撞反彈 (上、下)
-                if (this.y - this.radius < 0) {
-                    this.y = this.radius;
-                    this.vy = -this.vy;
-                } else if (this.y + this.radius > canvas.height) {
-                    this.y = canvas.height - this.radius;
-                    this.vy = -this.vy;
-                }
-            }
-
-            // 更新速度大小（用於閃避球增速或重置）
-            updateVelocityMagnitude() {
-                let base = BASE_SPEED;
-                if (this.type === 'wheelchair') base = BASE_SPEED * 0.3;
-                
-                let targetSpeed = base * this.speedMultiplier;
-                let currentSpeed = Math.hypot(this.vx, this.vy);
-                
-                if (currentSpeed > 0) {
-                    this.vx = (this.vx / currentSpeed) * targetSpeed;
-                    this.vy = (this.vy / currentSpeed) * targetSpeed;
-                }
-            }
-
-            draw() {
-                // 畫出主體圓球
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-
-                // 寫上名字縮寫
-                ctx.fillStyle = '#000';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(this.name[0], this.x, this.y + 4);
-
-                // 血條外框
-                ctx.fillStyle = '#444';
-                ctx.fillRect(this.x - 20, this.y - this.radius - 10, 40, 5);
-                // 綠色當前血量
-                ctx.fillStyle = '#00ff00';
-                ctx.fillRect(this.x - 20, this.y - this.radius - 10, 40 * (this.hp / this.maxHp), 5);
-            }
-        }
-
-        // 處理兩者互相碰撞後的物理反彈與技能觸發
-        function handleCollision(e1, e2) {
-            let dx = e2.x - e1.x;
-            let dy = e2.y - e1.y;
-            let dist = Math.hypot(dx, dy);
-            let minDist = e1.radius + e2.radius;
-
-            if (dist < minDist) {
-                // 1. 修正重疊狀況，防止卡在一起
-                let overlap = minDist - dist;
-                let nx = dx / dist;
-                let ny = dy / dist;
-                e1.x -= nx * (overlap / 2);
-                e1.y -= ny * (overlap / 2);
-
-                // 2. 經典物理彈性反彈計算 (交換速度向量)
-                let kx = e1.vx - e2.vx;
-                let ky = e1.vy - e2.vy;
-                let vn = kx * nx + ky * ny;
-
-                if (vn > 0) { // 確保它們是朝向彼此前進才反彈
-                    e1.vx -= vn * nx;
-                    e1.vy -= vn * ny;
-                    e2.vx += vn * nx;
-                    e2.vy += vn * ny;
-                }
-
-                // 3. 觸發技能（雙方各自對對方觸發一次碰撞事件）
-                triggerSkillEffect(e1, e2);
-                triggerSkillEffect(e2, e1);
-            }
-        }
-
-        // 技能邏輯核心
-        function triggerSkillEffect(attacker, defender) {
-            if (attacker.hp <= 0 || defender.hp <= 0) return;
-
-            // --- 🧛 吸血鬼技能 ---
-            if (attacker.type === 'vampire') {
-                defender.hp -= 20;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + 10); // 恢復一半(10)生命
-                
-                createFloatingText(defender.x, defender.y - 15, '-20', '#ff4d4d');
-                createFloatingText(attacker.x, attacker.y - 15, '+10 吸血', '#00ff66');
-            }
-
-            // --- 🟠 閃避球技能 ---
-            else if (attacker.type === 'dodgeball') {
-                if (Math.random() < 0.3) {
-                    // 30% 機率被對方閃避
-                    attacker.speedMultiplier *= 1.1; // 增加 10% 移動速度，不設上限
-                    attacker.updateVelocityMagnitude();
-                    
-                    createFloatingText(defender.x, defender.y - 15, '⚡ 閃避!', '#ffcc00');
-                    createFloatingText(attacker.x, attacker.y - 25, '🏎️ 速度+10%', '#ffaa00');
-                } else {
-                    // 未閃避，造成 50 傷害
-                    defender.hp -= 50;
-                    attacker.speedMultiplier = 1.0; // 重置為初始速度
-                    attacker.updateVelocityMagnitude();
-
-                    createFloatingText(defender.x, defender.y - 15, '-50', '#ffaa00');
-                    createFloatingText(attacker.x, attacker.y - 25, '↩️ 速度重置', '#fff');
-                }
-            }
-
-            // --- ♿ 輪椅技能 ---
-            else if (attacker.type === 'wheelchair') {
-                // 輪椅能夠被閃避 (如果撞到閃避球，則直接看閃避球的 30% 閃避判定；如果是其他人，這裡預設保留被閃避的空間)
-                // 為了完美符合「能夠閃避」，我們讓防守方如果是閃避球時有 30% 閃避率，其餘角色有 10% 基礎閃避率
-                let dodgeChance = (defender.type === 'dodgeball') ? 0.30 : 0.10;
-
-                if (Math.random() < dodgeChance) {
-                    createFloatingText(defender.x, defender.y - 15, '⚡ 閃避輪椅!', '#4da6ff');
-                } else {
-                    // 造成對方最大生命值 40% 的真實傷害 (100 * 40% = 40 傷害)
-                    let trueDamage = defender.maxHp * 0.40;
-                    defender.hp -= trueDamage;
-                    
-                    createFloatingText(defender.x, defender.y - 15, `💥 -${trueDamage} 真實傷害`, '#00ffff');
-                }
-            }
-        }
-
-        function createFloatingText(x, y, text, color) {
-            floatingTexts.push({ x: x, y: y, text: text, color: color, life: 40 });
-        }
-
-        function startGame() {
-            entities = [];
-            floatingTexts = [];
             
-            let vCount = parseInt(document.getElementById('vampireCount').value) || 0;
-            let dCount = parseInt(document.getElementById('dodgeballCount').value) || 0;
-            let wCount = parseInt(document.getElementById('wheelchairCount').value) || 0;
+            this.speed = this.baseSpeed; // 當前實際速度大小（完全獨立）
 
-            // 隨機在畫布內生成位置
-            function addUnits(count, type) {
-                for (let i = 0; i < count; i++) {
-                    let x = Math.random() * (canvas.width - 50) + 25;
-                    let y = Math.random() * (canvas.height - 50) + 25;
-                    entities.push(new Character(x, y, type));
-                }
-            }
-
-            addUnits(vCount, 'vampire');
-            addUnits(dCount, 'dodgeball');
-            addUnits(wCount, 'wheelchair');
-
-            if (entities.length === 0) {
-                scoreboard.innerText = "請至少輸入一個角色數量！";
-                return;
-            }
-
-            gameRunning = true;
-            scoreboard.innerText = "大混戰進行中...";
+            // 隨機決定移動方向向量（將其標準化，長度恆等於 1）
+            let angle = Math.random() * Math.PI * 2;
+            this.vx = Math.cos(angle); 
+            this.vy = Math.sin(angle);
         }
 
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        update() {
+            // 位置 ＝ 當前位置 ＋ (方向向量 * 自己的恆定速度)
+            this.x += this.vx * this.speed;
+            this.y += this.vy * this.speed;
 
-            if (gameRunning) {
-                // 1. 更新所有球的位置與邊界反彈
-                entities.forEach(ent => ent.update());
-
-                // 2. 兩兩檢查碰撞與反彈
-                for (let i = 0; i < entities.length; i++) {
-                    for (let j = i + 1; j < entities.length; j++) {
-                        handleCollision(entities[i], entities[j]);
-                    }
-                }
-
-                // 3. 移除死亡(HP <= 0)的角色
-                entities = entities.filter(ent => ent.hp > 0);
-
-                // 4. 檢查勝負
-                let typesLeft = [...new Set(entities.map(ent => ent.type))];
-                if (typesLeft.length === 1 && entities.length > 0) {
-                    scoreboard.innerText = `🏆 比赛結束！ 最終贏家是：${entities[0].name} 陣營！`;
-                    gameRunning = false;
-                } else if (entities.length === 0) {
-                    scoreboard.innerText = "💀 衕歸于盡！全部陣營都陣亡了！";
-                    gameRunning = false;
-                } else {
-                    // 即時更新上方狀態列
-                    let vRemaining = entities.filter(e => e.type === 'vampire').length;
-                    let dRemaining = entities.filter(e => e.type === 'dodgeball').length;
-                    let wRemaining = entities.filter(e => e.type === 'wheelchair').length;
-                    scoreboard.innerText = `生存狀態 -> 🧛吸血鬼: ${vRemaining} | 🟠閃避球: ${dRemaining} | ♿輪椅: ${wRemaining}`;
-                }
-            }
-
-            // 繪製留存的角色
-            entities.forEach(ent => ent.draw());
-
-            // 繪製並更新彈出文字
-            for (let i = floatingTexts.length - 1; i >= 0; i--) {
-                let ft = floatingTexts[i];
-                ft.y -= 0.5;
-                ft.life--;
-                ctx.fillStyle = ft.color;
-                ctx.font = 'bold 12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(ft.text, ft.x, ft.y);
-                if (ft.life <= 0) floatingTexts.splice(i, 1);
-            }
-
-            requestAnimationFrame(gameLoop);
+            // 牆壁反彈（僅調整方向正負號，絕對不影響向量長度與速度）
+            if (this.x < this.radius) { this.x = this.radius; this.vx = Math.abs(this.vx); }
+            if (this.x > canvas.width - this.radius) { this.x = canvas.width - this.radius; this.vx = -Math.abs(this.vx); }
+            if (this.y < this.radius) { this.y = this.radius; this.vy = Math.abs(this.vy); }
+            if (this.y > canvas.height - this.radius) { this.y = canvas.height - this.radius; this.vy = -Math.abs(this.vy); }
+            
+            if (this.hitEffect > 0) this.hitEffect--;
         }
 
-        startBtn.addEventListener('click', startGame);
+        draw() {
+            ctx.save();
+            let scale = 1.0 + (this.hitEffect * 0.04);
+            ctx.translate(this.x, this.y);
+            ctx.scale(scale, scale);
+
+            ctx.font = `32px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.icon, 0, 0);
+            ctx.restore();
+            
+            if (this.hp > 0) {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x - 20, this.y + 22, 40, 5);
+                ctx.fillStyle = this.hp > 30 ? '#00ff00' : '#ff3333';
+                ctx.fillRect(this.x - 20, this.y + 22, 40 * (this.hp / this.maxHp), 5);
+            }
+        }
+    }
+
+    function createFloatingText(x, y, text, color) {
+        floatingTexts.push({ x: x, y: y, text: text, color: color, life: 45 });
+    }
+
+    function startGame() {
+        entities = [];
+        floatingTexts = [];
+        const types = ['vampire', 'dodgeball', 'wheelchair'];
         
-        // 啟動渲染循環
-        gameLoop();
-    </script>
+        types.forEach(t => {
+            let count = parseInt(document.getElementById(t).value) || 0;
+            for(let i = 0; i < count; i++) {
+                entities.push(new Character(t));
+            }
+        });
+
+        if(entities.length === 0) {
+            statusBar.innerText = "戰場上沒有任何人，請輸入數量！";
+        } else {
+            statusBar.innerText = "大亂鬥全面開打！";
+        }
+    }
+
+    function checkCollisions() {
+        for (let i = 0; i < entities.length; i++) {
+            for (let j = i + 1; j < entities.length; j++) {
+                let e1 = entities[i], e2 = entities[j];
+                
+                if (e1.type === e2.type) continue; // 同陣營穿透
+
+                let dx = e2.x - e1.x;
+                let dy = e2.y - e1.y;
+                let dist = Math.hypot(dx, dy);
+                let minDist = e1.radius + e2.radius; 
+
+                if (dist < minDist) {
+                    // 1. 重疊修正
+                    let overlap = minDist - dist;
+                    let nx = dx / dist;
+                    let ny = dy / dist;
+                    e1.x -= nx * (overlap / 2);
+                    e1.y -= ny * (overlap / 2);
+                    e2.x += nx * (overlap / 2);
+                    e2.y += ny * (overlap / 2);
+
+                    // 2. 【核心修改】徹底刪除動量交換公式！
+                    // 碰撞後，雙方只獲取「彈開的法線方向向量」(長度為1)，完全不交換或繼承彼此的速度大小！
+                    e1.vx = -nx;
+                    e1.vy = -ny;
+                    e2.vx = nx;
+                    e2.vy = ny;
+
+                    // 3. 放大特效
+                    e1.hitEffect = 8; 
+                    e2.hitEffect = 8;
+                    
+                    // 4. 結算傷害與技能
+                    applyDamage(e1, e2);
+                    applyDamage(e2, e1);
+                }
+            }
+        }
+    }
+
+    function applyDamage(attacker, defender) {
+        if (attacker.hp <= 0 || defender.hp <= 0) return;
+
+        // 🧛 吸血鬼
+        if (attacker.type === 'vampire') {
+            defender.hp -= 20;
+            attacker.hp = Math.min(attacker.maxHp, attacker.hp + 10);
+            createFloatingText(defender.x, defender.y - 20, '-20', '#ff4d4d');
+            createFloatingText(attacker.x, attacker.y - 20, '+10 吸血', '#00ff66');
+        } 
+        
+        // 🏐 閃避球
+        else if (attacker.type === 'dodgeball') {
+            if (Math.random() < 0.3) {
+                // 被閃避：自己速度增加 10% (只修改自己的 speed，完全與他人無關)
+                attacker.speed *= 1.1; 
+                createFloatingText(defender.x, defender.y - 20, '⚡ 閃避！', '#ffcc00');
+                createFloatingText(attacker.x, attacker.y - 35, `🏎️ 自身速: ${attacker.speed.toFixed(1)}`, '#ffaa00');
+            } else {
+                // 未閃避：造成傷害，並將自己的速度精準重置回初始值
+                defender.hp -= 50;
+                attacker.speed = attacker.baseSpeed; 
+                createFloatingText(defender.x, defender.y - 20, '-50', '#ffaa00');
+                createFloatingText(attacker.x, attacker.y - 35, '↩️ 速度重置', '#ffffff');
+            }
+        } 
+        
+        // ♿ 輪椅
+        else if (attacker.type === 'wheelchair') {
+            if (Math.random() < 0.3) {
+                createFloatingText(defender.x, defender.y - 20, '⚡ 閃避輪椅！', '#4da6ff');
+            } else {
+                let trueDmg = defender.maxHp * 0.4;
+                defender.hp -= trueDmg;
+                createFloatingText(defender.x, defender.y - 20, `💥 -${trueDmg} 真實傷害`, '#00ffff');
+            }
+        }
+    }
+
+    function updateStatusBar() {
+        if (entities.length === 0) return;
+        let v = entities.filter(e => e.type === 'vampire').length;
+        let d = entities.filter(e => e.type === 'dodgeball').length;
+        let w = entities.filter(e => e.type === 'wheelchair').length;
+        
+        let aliveTypes = [...new Set(entities.map(e => e.type))];
+        if (aliveTypes.length === 1) {
+            let winner = entities[0].type === 'vampire' ? '🧛 吸血鬼' : (entities[0].type === 'dodgeball' ? '🏐 閃避球' : '♿ 輪椅');
+            statusBar.innerText = `🏆 競技結束！贏家是：${winner} 陣營！`;
+        } else {
+            statusBar.innerText = `戰場存活 -> 🧛吸血鬼: ${v} | 🏐閃避球: ${d} | ♿輪椅: ${w}`;
+        }
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        entities.forEach(e => e.update());
+        checkCollisions();
+        entities = entities.filter(e => e.hp > 0);
+        entities.forEach(e => e.draw());
+        updateStatusBar();
+
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            let ft = floatingTexts[i];
+            ft.y -= 0.6;
+            ft.life--;
+            ctx.fillStyle = ft.color;
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(ft.text, ft.x, ft.y);
+            if (ft.life <= 0) floatingTexts.splice(i, 1);
+        }
+
+        requestAnimationFrame(loop);
+    }
+    
+    loop();
+</script>
 </body>
 </html>
